@@ -1,0 +1,5 @@
+# 大文件 - 不上传 GitHub
+*.exe
+*.zip
+*.7z
+electron-app/

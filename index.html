@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🌟 小动物养成乐园 - 我的成长伙伴</title>
+
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#ff8c94">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="小动物乐园">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<style>
+/* ============ 全局样式 ============ */
+:root {
+  --bg: #fdf6e3;
+  --card: #ffffff;
+  --primary: #ff8c94;
+  --primary-dark: #e87a82;
+  --secondary: #7ec8e3;
+  --gold: #f5a623;
+  --gold-dark: #d4891a;
+  --green: #7bc67e;
+  --red: #e85d75;
+  --purple: #b39ddb;
+  --text: #4a4a4a;
+  --text-light: #888;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 4px 20px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --font: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: var(--font);
+  background: linear-gradient(135deg, #fce4ec 0%, #e8f5e9 30%, #e3f2fd 70%, #fff3e0 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+body::before {
+  content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='1.5' fill='%23ffcdd2' opacity='0.4'/%3E%3C/svg%3E") repeat;
+  pointer-events: none; z-index: 0;
+}
+.app-container { position: relative; z-index: 1; max-width: 500px; margin: 0 auto; min-height: 100vh; }
+.page { display: none; padding: 16px 16px 90px; min-height: 100vh; }
+.page.active { display: block; }
+
+/* ============ 底部导航 ============ */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+  display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  box-shadow: 0 -2px 20px rgba(0,0,0,0.06); max-width: 500px; margin: 0 auto;
+}
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: none; border: none; cursor: pointer; padding: 6px 12px;
+  font-size: 11px; color: var(--text-light); transition: all 0.2s;
+  font-family: var(--font);
+}
+.nav-item .nav-emoji { font-size: 22px; }
+.nav-item.active { color: var(--primary); transform: translateY(-2px); }
+.nav-item.active .nav-emoji { animation: bounce 0.5s; }
+
+/* ============ 角色选择页 ============ */
+.char-select { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 20px; }
+.char-title { font-size: 28px; font-weight: 700; margin-bottom: 8px; background: linear-gradient(135deg, #ff8c94, #f5a623); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.char-subtitle { color: var(--text-light); margin-bottom: 30px; font-size: 14px; }
+.char-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; max-width: 360px; margin-bottom: 24px; }
+.char-card {
+  background: white; border-radius: var(--radius); padding: 20px 12px;
+  text-align: center; cursor: pointer; transition: all 0.3s;
+  border: 3px solid transparent; box-shadow: var(--shadow);
+}
+.char-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.char-card.selected { border-color: var(--primary); background: #fff5f5; }
+.char-card .char-emoji { font-size: 50px; display: block; margin-bottom: 8px; }
+.char-card .char-label { font-size: 14px; font-weight: 600; }
+.name-input-group { display: flex; gap: 8px; width: 100%; max-width: 300px; }
+.name-input {
+  flex: 1; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: var(--radius);
+  font-size: 16px; font-family: var(--font); outline: none; transition: border 0.3s;
+}
+.name-input:focus { border-color: var(--primary); }
+.btn { padding: 12px 28px; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; font-family: var(--font); }
+.btn-primary { background: linear-gradient(135deg, var(--primary), #ffb3b8); color: white; box-shadow: 0 4px 15px rgba(255,140,148,0.4); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,140,148,0.5); }
+.btn-primary:disabled { opacity: 0.5; transform: none; cursor: not-allowed; }
+
+/* ============ 首页 ============ */
+.home-header {
+  display: flex; justify-content: space-between; align-items: center;
+  background: white; border-radius: var(--radius); padding: 14px 18px;
+  margin-bottom: 14px; box-shadow: var(--shadow);
+}
+.date-display { font-size: 14px; font-weight: 600; color: var(--text); }
+.coin-display {
+  display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 16px;
+  color: var(--gold);
+}
+.coin-display .coin-icon { font-size: 20px; }
+
+.stats-row { display: flex; gap: 10px; margin-bottom: 14px; }
+.stat-card {
+  flex: 1; background: white; border-radius: var(--radius); padding: 10px 14px;
+  text-align: center; box-shadow: var(--shadow);
+}
+.stat-card .stat-value { font-size: 22px; font-weight: 700; }
+.stat-card .stat-label { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+.stat-card.gold .stat-value { color: var(--gold); }
+.stat-card.green .stat-value { color: var(--green); }
+.stat-card.purple .stat-value { color: var(--purple); }
+
+.pet-area {
+  background: white; border-radius: var(--radius); padding: 24px;
+  text-align: center; margin-bottom: 14px; box-shadow: var(--shadow);
+  position: relative; overflow: hidden;
+}
+.pet-area::before {
+  content: '🌿🌸🌿🌸🌿🌸🌿🌸🌿🌸🌿🌸🌿🌸';
+  position: absolute; bottom: 4px; left: 0; right: 0; font-size: 14px;
+  opacity: 0.5; white-space: nowrap; animation: scroll 8s linear infinite;
+}
+.pet-display {
+  font-size: 80px; display: block; margin-bottom: 8px;
+  animation: float 3s ease-in-out infinite; cursor: pointer;
+  transition: transform 0.3s;
+}
+.pet-display:active { transform: scale(0.9); }
+.pet-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.pet-status-text { font-size: 13px; color: var(--text-light); }
+.status-bars { margin-top: 12px; }
+.status-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.status-bar-label { font-size: 12px; width: 44px; text-align: right; }
+.status-bar-track {
+  flex: 1; height: 10px; background: #f0f0f0; border-radius: 5px; overflow: hidden;
+}
+.status-bar-fill {
+  height: 100%; border-radius: 5px; transition: width 0.6s ease;
+}
+.status-bar-fill.hunger { background: linear-gradient(90deg, #ffa726, #ffcc02); }
+.status-bar-fill.mood { background: linear-gradient(90deg, #ec407a, #f48fb1); }
+.status-bar-fill.health { background: linear-gradient(90deg, #66bb6a, #a5d6a7); }
+.status-bar-value { font-size: 11px; color: var(--text-light); width: 30px; }
+
+.action-buttons { display: flex; gap: 12px; justify-content: center; }
+.action-btn {
+  width: 70px; height: 70px; border-radius: 50%; border: none;
+  font-size: 28px; cursor: pointer; transition: all 0.3s;
+  box-shadow: var(--shadow); position: relative;
+}
+.action-btn:hover { transform: scale(1.1); }
+.action-btn:active { transform: scale(0.9); }
+.action-btn.feed { background: #fff3e0; }
+.action-btn.play { background: #e3f2fd; }
+.action-btn.heal { background: #fce4ec; }
+.action-btn-label { font-size: 10px; color: var(--text-light); margin-top: 4px; }
+
+/* ============ 通用模态框 ============ */
+.modal-overlay {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); z-index: 200; justify-content: center;
+  align-items: flex-end;
+}
+.modal-overlay.show { display: flex; }
+.modal-sheet {
+  background: white; border-radius: 20px 20px 0 0; width: 100%; max-width: 500px;
+  max-height: 80vh; overflow-y: auto; padding: 20px; animation: slideUp 0.3s ease;
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.modal-title { font-size: 18px; font-weight: 700; }
+.modal-close { background: none; border: none; font-size: 24px; cursor: pointer; padding: 4px; color: var(--text-light); }
+
+/* ============ 任务列表 ============ */
+.section-title { font-size: 16px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.task-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.task-item {
+  display: flex; align-items: center; gap: 10px; background: white;
+  border-radius: var(--radius-sm); padding: 12px 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: all 0.2s;
+}
+.task-item:active { transform: scale(0.98); }
+.task-item.completed { opacity: 0.6; background: #f5f5f5; }
+.task-emoji { font-size: 24px; }
+.task-info { flex: 1; }
+.task-name { font-size: 14px; font-weight: 600; }
+.task-coins { font-size: 12px; color: var(--gold); }
+.task-done-btn {
+  width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--green);
+  background: white; font-size: 16px; cursor: pointer; transition: all 0.3s;
+  display: flex; align-items: center; justify-content: center;
+}
+.task-done-btn.done { background: var(--green); color: white; }
+
+/* ============ 扣分项 ============ */
+.penalty-item {
+  display: flex; align-items: center; gap: 10px; background: white;
+  border-radius: var(--radius-sm); padding: 12px 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.penalty-btn {
+  width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--red);
+  background: white; font-size: 16px; cursor: pointer; transition: all 0.3s;
+  display: flex; align-items: center; justify-content: center;
+}
+.penalty-btn:active { background: var(--red); color: white; }
+.penalty-coins { font-size: 12px; color: var(--red); }
+
+/* ============ 商店 ============ */
+.shop-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.shop-tab {
+  flex: 1; padding: 10px; border-radius: var(--radius-sm); border: 2px solid #e0e0e0;
+  background: white; font-size: 14px; font-weight: 600; cursor: pointer;
+  text-align: center; transition: all 0.2s; font-family: var(--font);
+}
+.shop-tab.active { border-color: var(--primary); background: #fff5f5; color: var(--primary); }
+.shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.shop-card {
+  background: white; border-radius: var(--radius); padding: 16px; text-align: center;
+  box-shadow: var(--shadow); transition: all 0.2s;
+}
+.shop-card .shop-emoji { font-size: 36px; display: block; margin-bottom: 6px; }
+.shop-card .shop-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.shop-card .shop-price { font-size: 12px; color: var(--gold); margin-bottom: 8px; }
+.shop-card .shop-owned { font-size: 11px; color: var(--green); margin-bottom: 8px; }
+.shop-buy-btn {
+  padding: 8px 16px; border-radius: 20px; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 600; font-family: var(--font);
+  background: var(--gold); color: white; transition: all 0.2s;
+}
+.shop-buy-btn:disabled { background: #ccc; cursor: not-allowed; }
+.shop-buy-btn:not(:disabled):active { transform: scale(0.95); }
+
+/* ============ 喂养/陪玩/治病选择弹窗 ============ */
+.inv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.inv-card {
+  background: #f8f8f8; border-radius: var(--radius-sm); padding: 14px 8px;
+  text-align: center; cursor: pointer; transition: all 0.2s; border: 2px solid transparent;
+}
+.inv-card:hover { border-color: var(--primary); background: #fff5f5; }
+.inv-card:active { transform: scale(0.95); }
+.inv-card .inv-emoji { font-size: 30px; display: block; margin-bottom: 4px; }
+.inv-card .inv-name { font-size: 12px; font-weight: 600; }
+.inv-card .inv-qty { font-size: 11px; color: var(--text-light); }
+.inv-empty { text-align: center; color: var(--text-light); padding: 30px; font-size: 14px; }
+
+/* ============ 编辑模态框 ============ */
+.edit-item {
+  display: flex; align-items: center; gap: 8px; padding: 10px;
+  background: #f8f8f8; border-radius: var(--radius-sm); margin-bottom: 8px;
+}
+.edit-item input { flex: 1; padding: 8px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 13px; font-family: var(--font); }
+.edit-item input[type="number"] { width: 60px; flex: none; text-align: center; }
+.edit-item .edit-delete {
+  background: var(--red); color: white; border: none; border-radius: 6px;
+  padding: 6px 10px; cursor: pointer; font-size: 12px;
+}
+.edit-toggle {
+  width: 36px; height: 36px; border-radius: 50%; border: 2px solid #e0e0e0;
+  background: white; cursor: pointer; font-size: 16px; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.edit-toggle.enabled { border-color: var(--green); background: #e8f5e9; }
+.add-edit-btn {
+  width: 100%; padding: 10px; border: 2px dashed #e0e0e0; border-radius: var(--radius-sm);
+  background: none; cursor: pointer; font-size: 14px; color: var(--text-light);
+  transition: all 0.2s; font-family: var(--font); margin-top: 8px;
+}
+.add-edit-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ============ 日报周报 ============ */
+.report-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.report-tab {
+  flex: 1; padding: 10px; border-radius: var(--radius-sm); border: 2px solid #e0e0e0;
+  background: white; font-size: 14px; font-weight: 600; cursor: pointer;
+  text-align: center; transition: all 0.2s; font-family: var(--font);
+}
+.report-tab.active { border-color: var(--secondary); background: #e3f2fd; color: var(--secondary); }
+.report-summary {
+  background: white; border-radius: var(--radius); padding: 16px;
+  margin-bottom: 12px; box-shadow: var(--shadow);
+}
+.report-summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+.report-summary-row.total { font-weight: 700; font-size: 16px; border-top: 1px solid #f0f0f0; margin-top: 6px; padding-top: 10px; }
+.report-item {
+  background: white; border-radius: var(--radius-sm); padding: 10px 14px;
+  margin-bottom: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+  display: flex; align-items: center; gap: 8px; font-size: 13px;
+}
+.report-item .ri-type { font-weight: 700; min-width: 36px; }
+.report-item .ri-type.plus { color: var(--green); }
+.report-item .ri-type.minus { color: var(--red); }
+.report-item .ri-name { flex: 1; }
+.report-item .ri-amount { font-weight: 600; }
+.chart-bar-row {
+  display: flex; align-items: flex-end; gap: 8px; height: 120px;
+  margin: 16px 0; padding: 0 4px;
+}
+.chart-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.chart-bar {
+  width: 100%; max-width: 40px; border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, var(--primary), #ffb3b8);
+  transition: height 0.5s ease; min-height: 4px;
+}
+.chart-bar-label { font-size: 10px; color: var(--text-light); margin-top: 4px; }
+.chart-bar-value { font-size: 11px; font-weight: 600; }
+
+/* ============ 心愿单 ============ */
+.wish-card {
+  background: white; border-radius: var(--radius); padding: 16px;
+  box-shadow: var(--shadow); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 12px;
+}
+.wish-info { flex: 1; }
+.wish-name { font-size: 15px; font-weight: 600; }
+.wish-cost { font-size: 13px; color: var(--gold); }
+.wish-redeem-btn {
+  padding: 10px 16px; border-radius: 20px; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 600; font-family: var(--font);
+  background: linear-gradient(135deg, var(--gold), #ffc107);
+  color: white; transition: all 0.2s;
+}
+.wish-redeem-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+/* ============ Toast ============ */
+.toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.85); color: white; padding: 10px 20px;
+  border-radius: 20px; font-size: 14px; font-weight: 600; z-index: 300;
+  animation: fadeIn 0.3s ease; pointer-events: none;
+}
+.toast.success { background: var(--green); }
+.toast.error { background: var(--red); }
+
+/* ============ 宠物反应气泡 ============ */
+.pet-bubble {
+  position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+  background: white; padding: 8px 14px; border-radius: 16px;
+  font-size: 13px; box-shadow: var(--shadow); white-space: nowrap;
+  animation: bubbleUp 1.5s ease forwards; pointer-events: none; z-index: 10;
+}
+
+/* ============ 动画 ============ */
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes bubbleUp { 0% { opacity: 1; transform: translateX(-50%) translateY(0); } 100% { opacity: 0; transform: translateX(-50%) translateY(-40px); } }
+@keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+@keyframes cry { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); filter: brightness(0.9); } }
+@keyframes eat { 0% { transform: scale(1); } 30% { transform: scale(1.15); } 60% { transform: scale(0.9) rotate(-5deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes sparkle { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(2) translateY(-30px); } }
+
+.pet-shake { animation: shake 0.5s ease; }
+.pet-cry { animation: cry 1s ease; }
+.pet-eat { animation: eat 0.6s ease; }
+.pet-happy { animation: bounce 0.5s ease; }
+
+/* 金币粒子 */
+.coin-particle {
+  position: fixed; font-size: 24px; pointer-events: none; z-index: 250;
+  animation: sparkle 1s ease forwards;
+}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- ============ 角色选择页 ============ -->
+  <div class="char-select page active" id="page-char">
+    <h1 class="char-title">🌟 小动物养成乐园</h1>
+    <p class="char-subtitle">选一只小动物，和它一起成长吧！</p>
+    <div class="char-grid" id="char-grid"></div>
+    <div class="name-input-group" style="margin-bottom:20px">
+      <input class="name-input" id="pet-name-input" placeholder="给你的小伙伴取个名字吧~" maxlength="8">
+    </div>
+    <button class="btn btn-primary" id="btn-start" disabled>开始冒险！✨</button>
+  </div>
+
+  <!-- ============ 首页 ============ -->
+  <div class="page" id="page-home">
+    <div class="home-header">
+      <div class="date-display" id="date-display"></div>
+      <div class="coin-display">💰 <span id="coins-display">0</span></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card gold"><div class="stat-value" id="today-score">0</div><div class="stat-label">今日积分</div></div>
+      <div class="stat-card green"><div class="stat-value" id="total-score">0</div><div class="stat-label">总积分</div></div>
+      <div class="stat-card purple"><div class="stat-value" id="inv-count">0</div><div class="stat-label">库存物品</div></div>
+    </div>
+    <div class="pet-area" id="pet-area">
+      <span class="pet-display" id="pet-emoji">🐰</span>
+      <div class="pet-name" id="pet-name-display">小白</div>
+      <div class="pet-status-text" id="pet-status-text">今天心情不错~</div>
+      <div class="status-bars">
+        <div class="status-bar-row">
+          <span class="status-bar-label">🍎 饱腹</span>
+          <div class="status-bar-track"><div class="status-bar-fill hunger" id="bar-hunger" style="width:80%"></div></div>
+          <span class="status-bar-value" id="val-hunger">80</span>
+        </div>
+        <div class="status-bar-row">
+          <span class="status-bar-label">💖 心情</span>
+          <div class="status-bar-track"><div class="status-bar-fill mood" id="bar-mood" style="width:80%"></div></div>
+          <span class="status-bar-value" id="val-mood">80</span>
+        </div>
+        <div class="status-bar-row">
+          <span class="status-bar-label">💚 健康</span>
+          <div class="status-bar-track"><div class="status-bar-fill health" id="bar-health" style="width:90%"></div></div>
+          <span class="status-bar-value" id="val-health">90</span>
+        </div>
+      </div>
+    </div>
+    <div class="action-buttons">
+      <div style="text-align:center"><button class="action-btn feed" id="btn-feed">🍎</button><div class="action-btn-label">喂养</div></div>
+      <div style="text-align:center"><button class="action-btn play" id="btn-play">🎾</button><div class="action-btn-label">陪玩</div></div>
+      <div style="text-align:center"><button class="action-btn heal" id="btn-heal">💊</button><div class="action-btn-label">治病</div></div>
+    </div>
+  </div>
+
+  <!-- ============ 任务页 ============ -->
+  <div class="page" id="page-tasks">
+    <div class="section-title">✅ 加分任务（点击完成）</div>
+    <div class="task-list" id="task-list"></div>
+    <button class="add-edit-btn" id="btn-add-task">+ 添加自定义任务</button>
+    <div style="margin-top:20px;margin-bottom:10px"></div>
+    <div class="section-title">⚠️ 扣分行为</div>
+    <div class="task-list" id="penalty-list"></div>
+    <button class="add-edit-btn" id="btn-add-penalty">+ 添加扣分项</button>
+  </div>
+
+  <!-- ============ 商店页 ============ -->
+  <div class="page" id="page-shop">
+    <div class="home-header" style="margin-bottom:12px">
+      <div class="date-display">🛒 商店</div>
+      <div class="coin-display">💰 <span id="shop-coins">0</span></div>
+    </div>
+    <div class="shop-tabs">
+      <button class="shop-tab active" data-tab="food">🍎 食物</button>
+      <button class="shop-tab" data-tab="toy">🎾 玩具</button>
+      <button class="shop-tab" data-tab="medicine">💊 药品</button>
+    </div>
+    <div class="shop-grid" id="shop-grid"></div>
+    <button class="add-edit-btn" id="btn-add-shop" style="margin-top:12px">+ 自定义商品</button>
+  </div>
+
+  <!-- ============ 日报/周报/心愿页 ============ -->
+  <div class="page" id="page-report">
+    <div class="report-tabs">
+      <button class="report-tab active" data-report="daily">📋 日报</button>
+      <button class="report-tab" data-report="weekly">📊 周报</button>
+      <button class="report-tab" data-report="wish">⭐ 心愿单</button>
+    </div>
+    <div id="report-content"></div>
+  </div>
+
+  <!-- ============ 底部导航 ============ -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="nav-item active" data-page="home"><span class="nav-emoji">🏠</span>首页</button>
+    <button class="nav-item" data-page="tasks"><span class="nav-emoji">📋</span>任务</button>
+    <button class="nav-item" data-page="shop"><span class="nav-emoji">🛒</span>商店</button>
+    <button class="nav-item" data-page="report"><span class="nav-emoji">📊</span>记录</button>
+  </nav>
+</div>
+
+<!-- ============ 模态框容器 ============ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-sheet" id="modal-content"></div>
+</div>
+
+<!-- Toast容器 -->
+<div id="toast-container"></div>
+
+<script>
+// ==================== 音频引擎 ====================
+const AudioEngine = {
+  ctx: null,
+  muted: false,
+
+  init() {
+    try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  },
+
+  play(type) {
+    if (this.muted || !this.ctx) return;
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    try {
+      const t = this.ctx.currentTime;
+      const g = v => { const o = this.ctx.createOscillator(); const gn = this.ctx.createGain(); gn.gain.value = v; gn.connect(this.ctx.destination); return {o,gn}; };
+
+      if (type === 'complete' || type === 'buy') {
+        // 叮咚完成任务 / 购买音效
+        const {o, gn} = g(0.3);
+        o.type = 'sine'; o.frequency.setValueAtTime(type==='buy'?880:1047, t);
+        o.frequency.setValueAtTime(type==='buy'?1100:1319, t+0.1);
+        gn.gain.exponentialRampToValueAtTime(0.01, t+0.3);
+        o.connect(gn); o.start(t); o.stop(t+0.3);
+      } else if (type === 'penalty') {
+        // 低沉扣分
+        const {o, gn} = g(0.3);
+        o.type = 'triangle'; o.frequency.setValueAtTime(200, t);
+        o.frequency.linearRampToValueAtTime(150, t+0.4);
+        gn.gain.exponentialRampToValueAtTime(0.01, t+0.5);
+        o.connect(gn); o.start(t); o.stop(t+0.5);
+      } else if (type === 'eat') {
+        // 咀嚼音
+        for (let i=0; i<3; i++) {
+          const {o, gn} = g(0.15);
+          o.type = 'sawtooth'; o.frequency.setValueAtTime(300, t+i*0.12);
+          gn.gain.exponentialRampToValueAtTime(0.01, t+i*0.12+0.1);
+          o.connect(gn); o.start(t+i*0.12); o.stop(t+i*0.12+0.1);
+        }
+      } else if (type === 'play') {
+        // 欢快玩耍音
+        const notes = [523, 659, 784, 1047];
+        notes.forEach((f,i) => {
+          const {o, gn} = g(0.12);
+          o.type = 'sine'; o.frequency.setValueAtTime(f, t+i*0.1);
+          gn.gain.exponentialRampToValueAtTime(0.01, t+i*0.1+0.15);
+          o.connect(gn); o.start(t+i*0.1); o.stop(t+i*0.1+0.15);
+        });
+      } else if (type === 'heal') {
+        // 治疗音
+        const {o, gn} = g(0.2);
+        o.type = 'sine'; o.frequency.setValueAtTime(600, t);
+        o.frequency.linearRampToValueAtTime(900, t+0.3);
+        gn.gain.exponentialRampToValueAtTime(0.01, t+0.4);
+        o.connect(gn); o.start(t); o.stop(t+0.4);
+      } else if (type === 'cry') {
+        // 哭泣音
+        const {o, gn} = g(0.2);
+        o.type = 'sawtooth'; o.frequency.setValueAtTime(400, t);
+        o.frequency.linearRampToValueAtTime(280, t+0.6);
+        gn.gain.exponentialRampToValueAtTime(0.01, t+0.7);
+        o.connect(gn); o.start(t); o.stop(t+0.7);
+      }
+    } catch(e) {}
+  }
+};
+
+// ==================== 数据管理 ====================
+const STORAGE_KEY = 'pet_platform_data';
+let data = {};
+
+const defaultData = {
+  pet: { type: '🐰', name: '小白', hunger: 80, mood: 80, health: 90 },
+  coins: 100,
+  totalScore: 100,
+  tasks: [
+    { id: 1, name: '完成作业', emoji: '📝', coins: 10, enabled: true },
+    { id: 2, name: '认真练字', emoji: '✍️', coins: 6, enabled: true },
+    { id: 3, name: '学习英语', emoji: '📖', coins: 8, enabled: true },
+    { id: 4, name: '早晚刷牙', emoji: '🪥', coins: 5, enabled: true },
+    { id: 5, name: '坐姿端正', emoji: '🧘', coins: 5, enabled: true },
+    { id: 6, name: '不发脾气', emoji: '😊', coins: 5, enabled: true },
+    { id: 7, name: '不说谎', emoji: '🤞', coins: 6, enabled: true },
+    { id: 8, name: '不说脏话', emoji: '🤐', coins: 5, enabled: true },
+    { id: 9, name: '每日阅读', emoji: '📚', coins: 7, enabled: true },
+    { id: 10, name: '运动锻炼', emoji: '🏃', coins: 5, enabled: true },
+    { id: 11, name: '按时早起', emoji: '⏰', coins: 5, enabled: true },
+    { id: 12, name: '整理房间', emoji: '🧹', coins: 6, enabled: true },
+  ],
+  penalties: [
+    { id: 101, name: '超时看电视', emoji: '📺', coins: 5, enabled: true },
+    { id: 102, name: '未完成作业', emoji: '❌', coins: 8, enabled: true },
+    { id: 103, name: '欺骗', emoji: '🤥', coins: 10, enabled: true },
+    { id: 104, name: '乱发脾气', emoji: '😤', coins: 5, enabled: true },
+    { id: 105, name: '说脏话', emoji: '🗣️', coins: 6, enabled: true },
+    { id: 106, name: '不按时睡觉', emoji: '🌙', coins: 4, enabled: true },
+  ],
+  shopItems: [
+    { id: 'carrot', name: '胡萝卜', emoji: '🥕', type: 'food', price: 5 },
+    { id: 'cabbage', name: '白菜', emoji: '🥬', type: 'food', price: 3 },
+    { id: 'apple', name: '苹果', emoji: '🍎', type: 'food', price: 4 },
+    { id: 'strawberry', name: '草莓', emoji: '🍓', type: 'food', price: 6 },
+    { id: 'cake', name: '小蛋糕', emoji: '🍰', type: 'food', price: 12 },
+    { id: 'ball', name: '皮球', emoji: '🎾', type: 'toy', price: 8 },
+    { id: 'yarn', name: '毛线团', emoji: '🧶', type: 'toy', price: 6 },
+    { id: 'bell', name: '铃铛', emoji: '🔔', type: 'toy', price: 5 },
+    { id: 'frisbee', name: '飞盘', emoji: '🥏', type: 'toy', price: 10 },
+    { id: 'vitamin', name: '维生素', emoji: '💊', type: 'medicine', price: 7 },
+    { id: 'coldmed', name: '感冒药', emoji: '🧪', type: 'medicine', price: 10 },
+    { id: 'bandage', name: '绷带', emoji: '🩹', type: 'medicine', price: 5 },
+    { id: 'nutrient', name: '营养剂', emoji: '💉', type: 'medicine', price: 15 },
+  ],
+  inventory: [],
+  wishes: [
+    { id: 1, name: '去游乐园玩', emoji: '🎢', cost: 300 },
+    { id: 2, name: '买乐高玩具', emoji: '🧱', cost: 500 },
+    { id: 3, name: '看一场电影', emoji: '🎬', cost: 100 },
+  ],
+  records: [],
+  todayCompleted: {}, // { taskId: true }
+  settings: { sound: true },
+  idCounter: 200,
+};
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      data = JSON.parse(raw);
+      // 确保所有键存在
+      Object.keys(defaultData).forEach(k => {
+        if (!(k in data)) data[k] = defaultData[k];
+      });
+    } else {
+      data = JSON.parse(JSON.stringify(defaultData));
+    }
+  } catch(e) {
+    data = JSON.parse(JSON.stringify(defaultData));
+  }
+  resetTodayIfNeeded();
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function resetTodayIfNeeded() {
+  const today = getTodayStr();
+  if (!data.todayDate || data.todayDate !== today) {
+    data.todayDate = today;
+    data.todayCompleted = {};
+    // 每日状态轻微衰减
+    data.pet.hunger = Math.max(0, data.pet.hunger - 5);
+    data.pet.mood = Math.max(0, data.pet.mood - 3);
+    data.pet.health = Math.max(0, data.pet.health - 2);
+    saveData();
+  }
+}
+
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getWeekRange() {
+  const d = new Date();
+  const day = d.getDay() || 7;
+  const start = new Date(d);
+  start.setDate(d.getDate() - day + 1);
+  const days = [];
+  for (let i=0; i<7; i++) {
+    const dt = new Date(start);
+    dt.setDate(start.getDate() + i);
+    days.push(`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`);
+  }
+  return days;
+}
+
+// ==================== 页面导航 ====================
+function navigateTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pageEl = document.getElementById('page-' + page);
+  if (pageEl) pageEl.classList.add('active');
+  document.querySelector(`.nav-item[data-page="${page}"]`)?.classList.add('active');
+  closeModal();
+  renderPage(page);
+}
+
+function renderPage(page) {
+  switch(page) {
+    case 'home': renderHome(); break;
+    case 'tasks': renderTasks(); break;
+    case 'shop': renderShop(); break;
+    case 'report': renderReport(); break;
+  }
+}
+
+// ==================== Toast ====================
+function showToast(msg, type='') {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; }, 1500);
+  setTimeout(() => el.remove(), 2000);
+}
+
+// ==================== 金币粒子 ====================
+function spawnCoinParticles(x, y, count=5) {
+  const emojis = ['🪙','✨','💫'];
+  for (let i=0; i<count; i++) {
+    const el = document.createElement('div');
+    el.className = 'coin-particle';
+    el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    el.style.left = (x + (Math.random()-0.5)*80) + 'px';
+    el.style.top = (y + (Math.random()-0.5)*40) + 'px';
+    el.style.animationDelay = (Math.random()*0.3) + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1500);
+  }
+}
+
+// ==================== 模态框 ====================
+function openModal(html) {
+  const overlay = document.getElementById('modal-overlay');
+  const content = document.getElementById('modal-content');
+  content.innerHTML = html;
+  overlay.classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ==================== 角色选择 ====================
+const characters = [
+  { type: '🐰', label: '小兔子' },
+  { type: '🐱', label: '小猫咪' },
+  { type: '🐶', label: '小狗狗' },
+  { type: '🐼', label: '小熊猫' },
+  { type: '🦊', label: '小狐狸' },
+  { type: '🐹', label: '小仓鼠' },
+];
+
+let selectedChar = null;
+
+function renderCharSelect() {
+  const grid = document.getElementById('char-grid');
+  grid.innerHTML = characters.map(c => `
+    <div class="char-card" data-type="${c.type}" onclick="selectChar('${c.type}', this)">
+      <span class="char-emoji">${c.type}</span>
+      <span class="char-label">${c.label}</span>
+    </div>
+  `).join('');
+}
+
+function selectChar(type, el) {
+  document.querySelectorAll('.char-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedChar = type;
+  document.getElementById('btn-start').disabled = false;
+}
+
+document.getElementById('btn-start').addEventListener('click', () => {
+  if (!selectedChar) return;
+  const name = document.getElementById('pet-name-input').value.trim() || '小伙伴';
+  data.pet.type = selectedChar;
+  data.pet.name = name;
+  data.pet.hunger = 80;
+  data.pet.mood = 80;
+  data.pet.health = 90;
+  saveData();
+  AudioEngine.play('complete');
+  navigateTo('home');
+});
+
+document.getElementById('pet-name-input').addEventListener('input', function() {
+  document.getElementById('btn-start').disabled = !selectedChar;
+});
+
+// ==================== 首页渲染 ====================
+function getPetMood() {
+  const avg = (data.pet.hunger + data.pet.mood + data.pet.health) / 3;
+  if (avg > 75) return { status: 'happy', text: '今天好开心呀！✨', anim: '' };
+  if (avg > 50) return { status: 'normal', text: '嗯...还行吧~', anim: '' };
+  if (avg > 25) return { status: 'sad', text: '有点不开心😢', anim: 'pet-shake' };
+  return { status: 'cry', text: '呜呜呜...好难受😭', anim: 'pet-cry' };
+}
+
+function renderHome() {
+  const today = new Date();
+  const weekDays = ['日','一','二','三','四','五','六'];
+  const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日 星期${weekDays[today.getDay()]}`;
+  document.getElementById('date-display').textContent = dateStr;
+  document.getElementById('coins-display').textContent = data.coins;
+  document.getElementById('pet-emoji').textContent = data.pet.type;
+  document.getElementById('pet-name-display').textContent = data.pet.name;
+  document.getElementById('bar-hunger').style.width = data.pet.hunger + '%';
+  document.getElementById('bar-mood').style.width = data.pet.mood + '%';
+  document.getElementById('bar-health').style.width = data.pet.health + '%';
+  document.getElementById('val-hunger').textContent = data.pet.hunger;
+  document.getElementById('val-mood').textContent = data.pet.mood;
+  document.getElementById('val-health').textContent = data.pet.health;
+
+  const mood = getPetMood();
+  document.getElementById('pet-status-text').textContent = mood.text;
+  const petEl = document.getElementById('pet-emoji');
+  petEl.className = 'pet-display ' + mood.anim;
+
+  // 今日积分
+  const todayStr = getTodayStr();
+  const todayRecords = data.records.filter(r => r.date === todayStr);
+  const todayScore = todayRecords.reduce((s, r) => s + (r.type==='plus' ? r.amount : -r.amount), 0);
+  document.getElementById('today-score').textContent = todayScore;
+  document.getElementById('total-score').textContent = data.totalScore;
+
+  // 库存统计
+  const invTotal = data.inventory.reduce((s, i) => s + i.qty, 0);
+  document.getElementById('inv-count').textContent = invTotal;
+
+  // 随机掉落装饰
+  if (!document.querySelector('.pet-sparkle')) {
+    const spark = document.createElement('span');
+    spark.className = 'pet-sparkle';
+    spark.textContent = '✨';
+    spark.style.cssText = 'position:absolute;top:30px;right:30px;font-size:20px;animation:sparkle 2s ease infinite;';
+    document.getElementById('pet-area').appendChild(spark);
+  }
+}
+
+// ==================== 宠物交互按钮 ====================
+function getItemsByType(type) {
+  return data.inventory.filter(i => {
+    const shopItem = data.shopItems.find(s => s.id === i.id);
+    return shopItem && shopItem.type === type && i.qty > 0;
+  });
+}
+
+function showActionModal(type) {
+  const typeNames = { food: '喂养', toy: '陪玩', medicine: '治病' };
+  const items = getItemsByType(type);
+  const shopItems = data.shopItems.filter(s => s.type === type);
+
+  let html = `<div class="modal-header"><span class="modal-title">🍎 ${typeNames[type]} - 选择物品</span><button class="modal-close" onclick="closeModal()">✕</button></div>`;
+
+  if (items.length === 0) {
+    html += `<div class="inv-empty">🎒 背包里没有${typeNames[type]}物品哦~<br>去商店买一些吧！</div>`;
+  } else {
+    html += `<div class="inv-grid">`;
+    items.forEach(inv => {
+      const shopItem = shopItems.find(s => s.id === inv.id);
+      html += `
+        <div class="inv-card" onclick="useItem('${inv.id}', '${type}')">
+          <span class="inv-emoji">${shopItem?.emoji || '🎁'}</span>
+          <span class="inv-name">${shopItem?.name || inv.id}</span>
+          <span class="inv-qty">x${inv.qty}</span>
+        </div>`;
+    });
+    html += `</div>`;
+  }
+  openModal(html);
+}
+
+function useItem(itemId, type) {
+  const invIdx = data.inventory.findIndex(i => i.id === itemId);
+  if (invIdx === -1 || data.inventory[invIdx].qty <= 0) {
+    showToast('物品不足！', 'error');
+    return;
+  }
+  data.inventory[invIdx].qty--;
+  if (data.inventory[invIdx].qty <= 0) data.inventory.splice(invIdx, 1);
+
+  const shopItem = data.shopItems.find(s => s.id === itemId);
+  const petEl = document.getElementById('pet-emoji');
+  let animClass = '';
+  let soundType = '';
+  let statusMsg = '';
+
+  if (type === 'food') {
+    data.pet.hunger = Math.min(100, data.pet.hunger + 20);
+    data.pet.mood = Math.min(100, data.pet.mood + 5);
+    animClass = 'pet-eat';
+    soundType = 'eat';
+    statusMsg = `吧唧吧唧~${shopItem?.name || '食物'}真好吃！😋`;
+  } else if (type === 'toy') {
+    data.pet.mood = Math.min(100, data.pet.mood + 20);
+    animClass = 'pet-happy';
+    soundType = 'play';
+    statusMsg = `好开心！${shopItem?.name || '玩具'}真好玩！🎉`;
+  } else if (type === 'medicine') {
+    data.pet.health = Math.min(100, data.pet.health + 20);
+    data.pet.mood = Math.min(100, data.pet.mood + 5);
+    animClass = 'pet-happy';
+    soundType = 'heal';
+    statusMsg = '感觉好多了~谢谢！💚';
+  }
+
+  saveData();
+  AudioEngine.play(soundType);
+
+  petEl.className = 'pet-display ' + animClass;
+  setTimeout(() => { petEl.className = 'pet-display'; }, 800);
+
+  // 气泡
+  showPetBubble(statusMsg);
+
+  closeModal();
+  renderHome();
+  showToast(`${shopItem?.emoji || ''} 使用了${shopItem?.name || '物品'}！`, 'success');
+}
+
+function showPetBubble(msg) {
+  const petArea = document.getElementById('pet-area');
+  const existing = petArea.querySelector('.pet-bubble');
+  if (existing) existing.remove();
+  const bubble = document.createElement('div');
+  bubble.className = 'pet-bubble';
+  bubble.textContent = msg;
+  petArea.appendChild(bubble);
+  setTimeout(() => bubble.remove(), 1800);
+}
+
+document.getElementById('btn-feed').addEventListener('click', () => showActionModal('food'));
+document.getElementById('btn-play').addEventListener('click', () => showActionModal('toy'));
+document.getElementById('btn-heal').addEventListener('click', () => showActionModal('medicine'));
+
+// ==================== 任务页 ====================
+function renderTasks() {
+  const taskList = document.getElementById('task-list');
+  taskList.innerHTML = data.tasks.filter(t => t.enabled).map(t => {
+    const completed = data.todayCompleted[t.id];
+    return `
+      <div class="task-item ${completed ? 'completed' : ''}" id="task-${t.id}">
+        <span class="task-emoji">${t.emoji || '⭐'}</span>
+        <div class="task-info">
+          <div class="task-name">${t.name}</div>
+          <div class="task-coins">💰 +${t.coins}</div>
+        </div>
+        <button class="task-done-btn ${completed ? 'done' : ''}" onclick="completeTask(${t.id})">${completed ? '✓' : ''}</button>
+        <button style="background:none;border:none;font-size:12px;cursor:pointer;padding:4px" onclick="editTaskItem(${t.id},'task')">✏️</button>
+      </div>`;
+  }).join('');
+
+  const penaltyList = document.getElementById('penalty-list');
+  penaltyList.innerHTML = data.penalties.filter(p => p.enabled).map(p => `
+    <div class="penalty-item">
+      <span class="task-emoji">${p.emoji || '⚠️'}</span>
+      <div class="task-info">
+        <div class="task-name">${p.name}</div>
+        <div class="penalty-coins">💰 -${p.coins}</div>
+      </div>
+      <button class="penalty-btn" onclick="applyPenalty(${p.id})">⚠️</button>
+      <button style="background:none;border:none;font-size:12px;cursor:pointer;padding:4px" onclick="editTaskItem(${p.id},'penalty')">✏️</button>
+    </div>
+  `).join('');
+}
+
+function completeTask(taskId) {
+  const task = data.tasks.find(t => t.id === taskId);
+  if (!task) return;
+  if (data.todayCompleted[taskId]) return;
+
+  data.todayCompleted[taskId] = true;
+  data.coins += task.coins;
+  data.totalScore += task.coins;
+  data.pet.mood = Math.min(100, data.pet.mood + 3);
+  data.records.push({ date: getTodayStr(), type: 'plus', name: task.name, amount: task.coins, time: Date.now() });
+  saveData();
+
+  AudioEngine.play('complete');
+  const btn = document.querySelector(`#task-${taskId} .task-done-btn`);
+  const rect = btn?.getBoundingClientRect();
+  if (rect) spawnCoinParticles(rect.left + rect.width/2, rect.top);
+
+  showToast(`✅ ${task.name} 完成！+${task.coins}💰`, 'success');
+
+  const petEl = document.getElementById('pet-emoji');
+  petEl.className = 'pet-display pet-happy';
+  setTimeout(() => { petEl.className = 'pet-display'; }, 600);
+
+  showPetBubble('太棒了！继续加油！🌟');
+  renderTasks();
+  renderHome();
+}
+
+function applyPenalty(penaltyId) {
+  const penalty = data.penalties.find(p => p.id === penaltyId);
+  if (!penalty) return;
+
+  const actualDeduct = Math.min(data.coins, penalty.coins);
+  data.coins = Math.max(0, data.coins - penalty.coins);
+  data.pet.mood = Math.max(0, data.pet.mood - 10);
+  data.records.push({ date: getTodayStr(), type: 'minus', name: penalty.name, amount: penalty.coins, time: Date.now() });
+  saveData();
+
+  AudioEngine.play('penalty');
+  setTimeout(() => AudioEngine.play('cry'), 400);
+
+  const petEl = document.getElementById('pet-emoji');
+  petEl.className = 'pet-display pet-cry';
+  setTimeout(() => { petEl.className = 'pet-display'; }, 1000);
+
+  showPetBubble('呜呜...我错了😭');
+  showToast(`⚠️ ${penalty.name}！-${actualDeduct}💰`, 'error');
+
+  renderTasks();
+  renderHome();
+}
+
+function editTaskItem(id, type) {
+  const list = type === 'task' ? data.tasks : data.penalties;
+  const item = list.find(i => i.id === id);
+  if (!item) return;
+
+  let html = `<div class="modal-header"><span class="modal-title">编辑${type==='task'?'任务':'扣分项'}</span><button class="modal-close" onclick="closeModal();renderTasks();">✕</button></div>`;
+  html += `<div class="edit-item">
+    <span>名称：</span><input id="edit-name" value="${item.name}">
+    <span>金币：</span><input type="number" id="edit-coins" value="${item.coins}" min="1" max="100" style="width:60px">
+  </div>`;
+  html += `<div class="edit-item">
+    <span>图标：</span><input id="edit-emoji" value="${item.emoji||''}" placeholder="如: 📝" style="width:60px">
+    <span>启用：</span><button class="edit-toggle ${item.enabled?'enabled':''}" id="edit-enabled" onclick="this.classList.toggle('enabled')">${item.enabled?'✓':'✕'}</button>
+  </div>`;
+  html += `<div style="display:flex;gap:8px">
+    <button class="btn btn-primary" style="flex:1" onclick="saveEditItem(${id},'${type}')">保存</button>
+    <button class="edit-delete" onclick="deleteItem(${id},'${type}')">删除</button>
+  </div>`;
+  openModal(html);
+}
+
+function saveEditItem(id, type) {
+  const list = type === 'task' ? data.tasks : data.penalties;
+  const item = list.find(i => i.id === id);
+  if (!item) return;
+  item.name = document.getElementById('edit-name').value.trim() || item.name;
+  item.coins = parseInt(document.getElementById('edit-coins').value) || item.coins;
+  item.emoji = document.getElementById('edit-emoji').value.trim() || item.emoji;
+  item.enabled = document.getElementById('edit-enabled').classList.contains('enabled');
+  saveData();
+  closeModal();
+  renderTasks();
+  showToast('已保存！');
+}
+
+function deleteItem(id, type) {
+  const list = type === 'task' ? data.tasks : data.penalties;
+  const idx = list.findIndex(i => i.id === id);
+  if (idx !== -1) { list.splice(idx, 1); saveData(); }
+  closeModal();
+  renderTasks();
+  showToast('已删除');
+}
+
+document.getElementById('btn-add-task').addEventListener('click', () => {
+  const newId = ++data.idCounter;
+  data.tasks.push({ id: newId, name: '新任务', emoji: '⭐', coins: 5, enabled: true });
+  saveData();
+  renderTasks();
+  editTaskItem(newId, 'task');
+});
+
+document.getElementById('btn-add-penalty').addEventListener('click', () => {
+  const newId = ++data.idCounter;
+  data.penalties.push({ id: newId, name: '新扣分项', emoji: '⚠️', coins: 5, enabled: true });
+  saveData();
+  renderTasks();
+  editTaskItem(newId, 'penalty');
+});
+
+// ==================== 商店 ====================
+let shopFilter = 'food';
+
+function renderShop() {
+  document.getElementById('shop-coins').textContent = data.coins;
+  const items = data.shopItems.filter(s => s.type === shopFilter);
+  const grid = document.getElementById('shop-grid');
+  grid.innerHTML = items.map(item => {
+    const invItem = data.inventory.find(i => i.id === item.id);
+    const owned = invItem ? invItem.qty : 0;
+    const canBuy = data.coins >= item.price;
+    return `
+      <div class="shop-card">
+        <span class="shop-emoji">${item.emoji}</span>
+        <div class="shop-name">${item.name}</div>
+        <div class="shop-price">💰 ${item.price}</div>
+        ${owned > 0 ? `<div class="shop-owned">已有 x${owned}</div>` : ''}
+        <button class="shop-buy-btn" ${!canBuy ? 'disabled' : ''} onclick="buyItem('${item.id}')">
+          ${canBuy ? '购买' : '金币不足'}
+        </button>
+      </div>`;
+  }).join('');
+
+  document.querySelectorAll('.shop-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.tab === shopFilter);
+  });
+}
+
+function buyItem(itemId) {
+  const item = data.shopItems.find(s => s.id === itemId);
+  if (!item) return;
+  if (data.coins < item.price) {
+    showToast('金币不足！快去完成任务赚金币吧~', 'error');
+    return;
+  }
+  data.coins -= item.price;
+  const invItem = data.inventory.find(i => i.id === itemId);
+  if (invItem) {
+    invItem.qty++;
+  } else {
+    data.inventory.push({ id: itemId, qty: 1 });
+  }
+  saveData();
+  AudioEngine.play('buy');
+
+  const btn = document.activeElement;
+  const rect = btn?.getBoundingClientRect();
+  if (rect) spawnCoinParticles(rect.left + rect.width/2, rect.top, 3);
+
+  showToast(`购买了 ${item.emoji} ${item.name}！`, 'success');
+  renderShop();
+  renderHome();
+}
+
+document.querySelectorAll('.shop-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    shopFilter = this.dataset.tab;
+    renderShop();
+  });
+});
+
+document.getElementById('btn-add-shop').addEventListener('click', () => {
+  let html = `<div class="modal-header"><span class="modal-title">添加商品</span><button class="modal-close" onclick="closeModal()">✕</button></div>`;
+  html += `<div class="edit-item"><span>名称：</span><input id="new-shop-name" placeholder="商品名称"></div>`;
+  html += `<div class="edit-item"><span>图标：</span><input id="new-shop-emoji" placeholder="如: 🎁" style="width:60px"></div>`;
+  html += `<div class="edit-item"><span>价格：</span><input type="number" id="new-shop-price" value="5" min="1" style="width:60px"></div>`;
+  html += `<div class="edit-item"><span>类型：</span><select id="new-shop-type" style="padding:8px;border-radius:6px;border:1px solid #e0e0e0;font-family:var(--font)">
+    <option value="food">🍎 食物</option><option value="toy">🎾 玩具</option><option value="medicine">💊 药品</option>
+  </select></div>`;
+  html += `<button class="btn btn-primary" style="width:100%;margin-top:10px" onclick="addShopItem()">添加</button>`;
+  openModal(html);
+});
+
+function addShopItem() {
+  const name = document.getElementById('new-shop-name').value.trim();
+  const emoji = document.getElementById('new-shop-emoji').value.trim() || '🎁';
+  const price = parseInt(document.getElementById('new-shop-price').value) || 5;
+  const type = document.getElementById('new-shop-type').value;
+  if (!name) { showToast('请输入名称', 'error'); return; }
+  const newId = 'custom_' + (++data.idCounter);
+  data.shopItems.push({ id: newId, name, emoji, type, price });
+  saveData();
+  closeModal();
+  renderShop();
+  showToast('商品已添加！');
+}
+
+// ==================== 日报/周报/心愿单 ====================
+let reportMode = 'daily';
+
+function renderReport() {
+  document.querySelectorAll('.report-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.report === reportMode);
+  });
+  const container = document.getElementById('report-content');
+
+  if (reportMode === 'daily') {
+    renderDailyReport(container);
+  } else if (reportMode === 'weekly') {
+    renderWeeklyReport(container);
+  } else if (reportMode === 'wish') {
+    renderWishList(container);
+  }
+}
+
+function renderDailyReport(container) {
+  const today = getTodayStr();
+  const records = data.records.filter(r => r.date === today);
+  const plusSum = records.filter(r => r.type === 'plus').reduce((s,r) => s+r.amount, 0);
+  const minusSum = records.filter(r => r.type === 'minus').reduce((s,r) => s+r.amount, 0);
+  const net = plusSum - minusSum;
+
+  let html = `<div class="report-summary">
+    <div class="report-summary-row"><span>✅ 加分</span><span style="color:var(--green)">+${plusSum}</span></div>
+    <div class="report-summary-row"><span>⚠️ 扣分</span><span style="color:var(--red)">-${minusSum}</span></div>
+    <div class="report-summary-row total"><span>📊 今日净积分</span><span style="color:var(--gold)">${net >= 0 ? '+' : ''}${net}</span></div>
+    <div class="report-summary-row" style="font-size:12px;color:var(--text-light)"><span>总积分余额</span><span>${data.totalScore}</span></div>
+  </div>`;
+
+  if (records.length === 0) {
+    html += `<div class="inv-empty">今天还没有记录哦~ 去完成任务吧！</div>`;
+  } else {
+    records.sort((a,b) => b.time - a.time).forEach(r => {
+      html += `<div class="report-item">
+        <span class="ri-type ${r.type}">${r.type === 'plus' ? '+'+r.amount : '-'+r.amount}</span>
+        <span class="ri-name">${r.name}</span>
+        <span class="ri-amount">💰</span>
+      </div>`;
+    });
+  }
+  container.innerHTML = html;
+}
+
+function renderWeeklyReport(container) {
+  const weekDays = getWeekRange();
+  const dayNames = ['周一','周二','周三','周四','周五','周六','周日'];
+  const scores = weekDays.map(date => {
+    const records = data.records.filter(r => r.date === date);
+    return records.reduce((s,r) => s + (r.type==='plus'?r.amount:-r.amount), 0);
+  });
+  const total = scores.reduce((s,v) => s+v, 0);
+  const maxScore = Math.max(...scores, 1);
+
+  let html = `<div class="report-summary">
+    <div class="report-summary-row total"><span>📊 本周总积分</span><span style="color:var(--gold)">${total >= 0 ? '+' : ''}${total}</span></div>
+  </div>
+  <div style="background:white;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)">
+    <div style="font-weight:600;margin-bottom:8px">本周每日积分柱状图</div>
+    <div class="chart-bar-row">`;
+  scores.forEach((s,i) => {
+    const h = Math.max(4, (s / maxScore) * 100);
+    html += `<div class="chart-bar-col">
+      <div class="chart-bar" style="height:${h}%;background:${s>=0?'linear-gradient(180deg,#7bc67e,#a5d6a7)':'linear-gradient(180deg,#e85d75,#f48fb1)'}"></div>
+      <div class="chart-bar-value">${s>=0?'+':''}${s}</div>
+      <div class="chart-bar-label">${dayNames[i]}</div>
+    </div>`;
+  });
+  html += `</div></div>`;
+
+  // 本周详细记录
+  const weekRecords = data.records.filter(r => weekDays.includes(r.date));
+  if (weekRecords.length === 0) {
+    html += `<div class="inv-empty" style="margin-top:12px">本周还没有记录哦~</div>`;
+  }
+  container.innerHTML = html;
+}
+
+function renderWishList(container) {
+  let html = `<div class="report-summary">
+    <div class="report-summary-row total"><span>⭐ 总积分</span><span style="color:var(--gold)">${data.totalScore}</span></div>
+  </div>`;
+
+  data.wishes.forEach(w => {
+    const canRedeem = data.totalScore >= w.cost;
+    html += `<div class="wish-card">
+      <span style="font-size:30px">${w.emoji}</span>
+      <div class="wish-info">
+        <div class="wish-name">${w.name}</div>
+        <div class="wish-cost">需要 ${w.cost} 积分</div>
+      </div>
+      <button class="wish-redeem-btn" ${!canRedeem?'disabled':''} onclick="redeemWish(${w.id})">
+        ${canRedeem ? '兑换' : `还差${w.cost - data.totalScore}分`}
+      </button>
+    </div>`;
+  });
+
+  html += `<button class="add-edit-btn" id="btn-add-wish" style="margin-top:8px">+ 添加心愿</button>`;
+  container.innerHTML = html;
+
+  document.getElementById('btn-add-wish')?.addEventListener('click', () => {
+    let h = `<div class="modal-header"><span class="modal-title">添加心愿</span><button class="modal-close" onclick="closeModal()">✕</button></div>`;
+    h += `<div class="edit-item"><span>名称：</span><input id="new-wish-name" placeholder="心愿名称"></div>`;
+    h += `<div class="edit-item"><span>图标：</span><input id="new-wish-emoji" placeholder="如: 🎁" style="width:60px"></div>`;
+    h += `<div class="edit-item"><span>积分：</span><input type="number" id="new-wish-cost" value="200" min="10" style="width:80px"></div>`;
+    h += `<button class="btn btn-primary" style="width:100%;margin-top:10px" onclick="addWish()">添加</button>`;
+    openModal(h);
+  });
+}
+
+function redeemWish(wishId) {
+  const wish = data.wishes.find(w => w.id === wishId);
+  if (!wish || data.totalScore < wish.cost) {
+    showToast('积分不足！继续努力吧~', 'error');
+    return;
+  }
+  if (!confirm(`确定要用 ${wish.cost} 积分兑换「${wish.name}」吗？`)) return;
+  data.totalScore -= wish.cost;
+  data.records.push({ date: getTodayStr(), type: 'minus', name: `兑换心愿：${wish.name}`, amount: wish.cost, time: Date.now() });
+  saveData();
+  AudioEngine.play('complete');
+  showToast(`🎉 心愿达成！「${wish.name}」已兑换！`, 'success');
+  renderReport();
+  renderHome();
+}
+
+function addWish() {
+  const name = document.getElementById('new-wish-name').value.trim();
+  const emoji = document.getElementById('new-wish-emoji').value.trim() || '🎁';
+  const cost = parseInt(document.getElementById('new-wish-cost').value) || 200;
+  if (!name) { showToast('请输入名称', 'error'); return; }
+  data.wishes.push({ id: ++data.idCounter, name, emoji, cost });
+  saveData();
+  closeModal();
+  renderReport();
+  showToast('心愿已添加！');
+}
+
+document.querySelectorAll('.report-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    reportMode = this.dataset.report;
+    renderReport();
+  });
+});
+
+// ==================== 底部导航 ====================
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', function() {
+    const page = this.dataset.page;
+    if (page === 'home' && !data.pet) {
+      document.getElementById('page-char').classList.add('active');
+      document.getElementById('page-home').classList.remove('active');
+      return;
+    }
+    navigateTo(page);
+  });
+});
+
+// ==================== 初始化 ====================
+function init() {
+  AudioEngine.init();
+  loadData();
+  renderCharSelect();
+
+  if (data.pet && data.pet.type) {
+    // 已选择角色，直接进入首页
+    document.getElementById('page-char').classList.remove('active');
+    document.getElementById('page-home').classList.add('active');
+    renderHome();
+  }
+
+  // 宠物点击互动
+  document.getElementById('pet-emoji').addEventListener('click', function() {
+    const messages = ['你好呀~', '好开心！', '陪我玩！', '嘻嘻~', '要加油哦！', '抱抱~'];
+    const msg = messages[Math.floor(Math.random() * messages.length)];
+    showPetBubble(msg);
+    this.classList.add('pet-happy');
+    setTimeout(() => this.classList.remove('pet-happy'), 500);
+  });
+
+  // 添加静音开关到右上角
+  const soundBtn = document.createElement('button');
+  soundBtn.id = 'sound-toggle';
+  soundBtn.style.cssText = 'position:fixed;top:12px;right:12px;z-index:300;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,0.9);font-size:18px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.1);';
+  soundBtn.textContent = AudioEngine.muted ? '🔇' : '🔊';
+  soundBtn.addEventListener('click', () => {
+    AudioEngine.muted = !AudioEngine.muted;
+    soundBtn.textContent = AudioEngine.muted ? '🔇' : '🔊';
+    data.settings.sound = !AudioEngine.muted;
+    saveData();
+  });
+  document.body.appendChild(soundBtn);
+
+  // 初始静音状态
+  if (data.settings && data.settings.sound === false) {
+    AudioEngine.muted = true;
+    soundBtn.textContent = '🔇';
+  }
+
+  // 注册 Service Worker (PWA)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>

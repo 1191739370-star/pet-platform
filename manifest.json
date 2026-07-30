@@ -1,0 +1,14 @@
+{
+  "name": "小动物养成乐园",
+  "short_name": "小动物乐园",
+  "description": "通过养育小动物来激励小朋友养成好习惯",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fdf6e3",
+  "theme_color": "#ff8c94",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
