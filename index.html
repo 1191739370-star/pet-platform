@@ -547,6 +547,7 @@ const AudioEngine = {
 
 // ==================== 数据管理 ====================
 const STORAGE_KEY = 'pet_platform_data';
+const APP_VERSION = 2; // 升级版本号来触发数据更新
 let data = {};
 
 const defaultData = {
@@ -607,15 +608,24 @@ function loadData() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       data = JSON.parse(raw);
+      // 版本升级：自动更新任务分数和扣分项
+      if (!data.appVersion || data.appVersion < APP_VERSION) {
+        data.tasks = JSON.parse(JSON.stringify(defaultData.tasks));
+        data.penalties = JSON.parse(JSON.stringify(defaultData.penalties));
+        data.appVersion = APP_VERSION;
+        saveData();
+      }
       // 确保所有键存在
       Object.keys(defaultData).forEach(k => {
         if (!(k in data)) data[k] = defaultData[k];
       });
     } else {
       data = JSON.parse(JSON.stringify(defaultData));
+      data.appVersion = APP_VERSION;
     }
   } catch(e) {
     data = JSON.parse(JSON.stringify(defaultData));
+    data.appVersion = APP_VERSION;
   }
   resetTodayIfNeeded();
 }
