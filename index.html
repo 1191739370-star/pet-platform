@@ -393,8 +393,8 @@ body::before {
     </div>
     <div class="stats-row">
       <div class="stat-card gold"><div class="stat-value" id="today-score">0</div><div class="stat-label">今日积分</div></div>
-      <div class="stat-card green"><div class="stat-value" id="total-score">0</div><div class="stat-label">总积分</div></div>
-      <div class="stat-card purple"><div class="stat-value" id="inv-count">0</div><div class="stat-label">库存物品</div></div>
+      <div class="stat-card green"><div class="stat-value" id="total-score">0</div><div class="stat-label">本周积分</div></div>
+      <div class="stat-card purple"><div class="stat-value" id="week-days-left">0</div><div class="stat-label">本周期剩余</div></div>
     </div>
     <div class="pet-area" id="pet-area">
       <span class="pet-display" id="pet-emoji">🐰</span>
@@ -624,8 +624,33 @@ function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
+function getWeekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay() || 7; // 周一=1, 周日=7
+  d.setDate(d.getDate() - day + 1);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function getWeekStartStr() {
+  const ws = getWeekStart(new Date());
+  return `${ws.getFullYear()}-${String(ws.getMonth()+1).padStart(2,'0')}-${String(ws.getDate()).padStart(2,'0')}`;
+}
+
 function resetTodayIfNeeded() {
   const today = getTodayStr();
+  const weekStart = getWeekStartStr();
+
+  // 初始化或切换周：重置总积分
+  if (!data.weekStart || data.weekStart !== weekStart) {
+    data.weekStart = weekStart;
+    data.totalScore = 0;
+    data.todayCompleted = {};
+    saveData();
+    return;
+  }
+
+  // 新的一天
   if (!data.todayDate || data.todayDate !== today) {
     data.todayDate = today;
     data.todayCompleted = {};
@@ -643,10 +668,7 @@ function getTodayStr() {
 }
 
 function getWeekRange() {
-  const d = new Date();
-  const day = d.getDay() || 7;
-  const start = new Date(d);
-  start.setDate(d.getDate() - day + 1);
+  const start = getWeekStart(new Date());
   const days = [];
   for (let i=0; i<7; i++) {
     const dt = new Date(start);
@@ -799,6 +821,11 @@ function renderHome() {
   const todayScore = todayRecords.reduce((s, r) => s + (r.type==='plus' ? r.amount : -r.amount), 0);
   document.getElementById('today-score').textContent = todayScore;
   document.getElementById('total-score').textContent = data.totalScore;
+
+  // 本周剩余天数
+  const weekStart = getWeekStart(new Date());
+  const daysLeft = 7 - Math.floor((new Date() - weekStart) / (1000*60*60*24));
+  document.getElementById('week-days-left').textContent = daysLeft > 0 ? daysLeft + '天' : '最后一天';
 
   // 库存统计
   const invTotal = data.inventory.reduce((s, i) => s + i.qty, 0);
@@ -1169,7 +1196,7 @@ function renderDailyReport(container) {
     <div class="report-summary-row"><span>✅ 加分</span><span style="color:var(--green)">+${plusSum}</span></div>
     <div class="report-summary-row"><span>⚠️ 扣分</span><span style="color:var(--red)">-${minusSum}</span></div>
     <div class="report-summary-row total"><span>📊 今日净积分</span><span style="color:var(--gold)">${net >= 0 ? '+' : ''}${net}</span></div>
-    <div class="report-summary-row" style="font-size:12px;color:var(--text-light)"><span>总积分余额</span><span>${data.totalScore}</span></div>
+    <div class="report-summary-row" style="font-size:12px;color:var(--text-light)"><span>本周积分余额</span><span>${data.totalScore}</span></div>
   </div>`;
 
   if (records.length === 0) {
@@ -1222,7 +1249,7 @@ function renderWeeklyReport(container) {
 
 function renderWishList(container) {
   let html = `<div class="report-summary">
-    <div class="report-summary-row total"><span>⭐ 总积分</span><span style="color:var(--gold)">${data.totalScore}</span></div>
+    <div class="report-summary-row total"><span>⭐ 本周积分（可兑换心愿）</span><span style="color:var(--gold)">${data.totalScore}</span></div>
   </div>`;
 
   data.wishes.forEach(w => {
